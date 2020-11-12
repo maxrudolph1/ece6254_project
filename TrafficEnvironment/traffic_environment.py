@@ -22,7 +22,8 @@ class TrafficEnv():
         self.lights = [0 for _ in range(len(self.horiz_lanes) * len(self.vert_lanes))]
         self.make_initial_state([True for _ in range(self.ly * self.lx)])
         self.reset()
-    
+        self.observation_space = self.car_indices
+        self.action_space = np.array(self.lights)
         
     
     def verify_inputs(self):
