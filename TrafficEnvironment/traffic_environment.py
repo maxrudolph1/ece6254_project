@@ -16,11 +16,13 @@ class TrafficEnv():
         self.initial_cars = None
         self.current_step = 0
         self.verify_inputs()
+        
         self.get_layout()
         # Make all lights green for vertical lanes ('1'), it does not matter
         self.lights = [0 for _ in range(len(self.horiz_lanes) * len(self.vert_lanes))]
         self.make_initial_state([True for _ in range(self.ly * self.lx)])
         self.reset()
+    
         
     
     def verify_inputs(self):
