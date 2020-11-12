@@ -84,6 +84,7 @@ class TrafficEnv():
             raise TypeError('Argument \'max_steps\' must be a positive int')
         elif self.max_steps <= 0:
             raise ValueError('Argument \'max_steps\' is not positive')
+        print('test')
 
     
     def reward(self):
