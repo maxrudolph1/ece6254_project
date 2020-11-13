@@ -99,8 +99,19 @@ class Muzero:
 
 if __name__ == "__main__":
 
-
     muzero = muzero('tictactoe')
     
     # Select Train, Load and Play
+
+    # Need either of the following if using DistributedDataParallel()  - DDP
+    # reference https://github.com/pytorch/examples/blob/master/imagenet/main.py
+
+    # Spawn a thread for multiprocessing will pickle model and save to desk
+    #torch.multiprocessing.spawn(function_name, args=(arg1,),nprocs=#,join=True)
+
+    # sync with nccl, mpi, 
+    #torch.distributed.init_process_group()
+
+    
+
     

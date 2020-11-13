@@ -19,9 +19,7 @@ class MuZeroNetwork:
                 config.support_size,
             )
         else:
-            raise NotImplementedError(
-                'The network parameter should be "fullyconnected" or "resnet".'
-            )
+            raise NotImplementedError('The network parameter should be "fullyconnected".')
 
 def dict_to_cpu(dictionary):
     cpu_dict = {}
@@ -74,32 +72,91 @@ class MuZeroFullyConnectedNetwork(AbstractNetwork):
         self.action_space_size = action_space_size
         self.full_support_size = 2 * support_size + 1
 
-        self.representation_network = None #mlp
+        
 
-        self.dynamics_encoded_state_network = None #mlp
+        self.representation_network = #torch.nn.parallel.DistributedDataParallel(
+            mlp(observation_shape[0] * observation_shape[1] * observation_shape[2] * (stacked_observations + 1)
+                + stacked_observations * observation_shape[1] * observation_shape[2],
+                fc_representation_layers,
+                encoding_size
+            )
+        #)
 
-        self.dynamics_reward_network = None #mlp
+        self.dynamics_encoded_state_network = #torch.nn.parallel.DistributedDataParallel(
+            mlp( endcoding_size + action_space_size,
+                fc_dynamics_layers,
+                encoding_size   
+            )
+        #)
 
-        self.prediction_policy_network = None #mlp
+        self.dynamics_reward_network = #torch.nn.parallel.DistributedDataParallel(
+            mlp(encoding_size, fc_reward_layers, full_support_size)
+        #)
 
-        self.prediction_value_network = None # mlp
+        self.prediction_policy_network = #torch.nn.parallel.DistributedDataParallel(
+            mlp(encoding_size, fc_reward_layers, action_space_size)
+        #)
 
+        self.prediction_value_network = #torch.nn.parallel.DistributedDataParallel(
+            mlp(encoding_size, fc_value_layers, full_support_size)
+        #)
+
+    # perform prediction inference hidden_state-> policy, value
     def prediction(self, encoded_state):
         policy_logits = None
         value = None
+        policy_logits = self.prediction_policy_network(encoded_state)
+        value = self.prediction_value_network(encoded_state)
         return policy_logits, value
 
     def representation(self, observation):
-        pass
+        # TODO double check this
+
+        # From arxiv muzero paper training appendix
+        # "To improve the learning process and bound the activations, we also scale the hidden state to the same range as
+        # the action input ([0, 1]): sscaled = s−min(s)/(max(s)−min(s))""
+
+        hidden_state = self.representation_network(observation.view(observation.shape[0], -1))
+        return hidden_state
 
     def dynamics(self, encoded_state, action):
-        pass
+        # From arxiv muzero paper network architecture appendix
+        # "For the dynamics function (which always operates at the downsampled resolution of 6x6), the action is first
+        # encoded as an image, then stacked with the hidden state of the previous step along the plane dimension"
+        action_one_hot = (
+            torch.zeros((action.shape[0], self.action_space_size))
+            .to(action.device)
+            .float()
+        )
+        action_one_hot.scatter_(1, action.long(), 1.0)
+        model_input = torch.cat((encoded_state, action_one_hot), dim=1)
+        next_hidden_state = self.dynamics_encoded_state_network(model_input)
+        reward = dynamics_reward_network(next_hidden_state)
+
+        #TODO normalize hidden_state
+
+        return next_hidden_state, reward
 
     def initial_inference(self, observation):
-        pass
+        hidden_state = self.representation(observation)
+        policy, value = self.prediction(hidden_state)
 
-    def recurrent_inference(self, encoded_state, action):
-        pass
+        # Generate dummy reward of 0
+        reward = torch.log(
+            (
+                torch.zeros(1, self.full_support_size)
+                .scatter(1, torch.tensor([[self.full_support_size // 2]]).long(), 1.0)
+                .repeat(len(observation), 1)
+                .to(observation.device)
+            )
+        )
+        
+        return value, reward, policy, hidden_state
+
+    def recurrent_inference(self, hidden_state, action):
+        next_hidden_state, reward = self.dynamics(hidden_state, action)
+        policy, value = self.prediction(next_hidden_state)
+        return value, reward, policy, hidden_state
 
 ###### End Fully Connected #######
 ##################################
@@ -113,7 +170,17 @@ def mlp(
 ):
     sizes = [input_size] + layer_sizes + [output_size]
     layers = []
-    # create layers for multilayer perceptron here with pytorch
+
+    # create layers for multilayer perceptron
+    for i in range (len(sizes) - 1):
+        # set activation functions for each layer
+        if (i < len(sizes) - 2):
+            activation_funct = activation
+        else:
+            activation = output_activation
+        # add linear transform layer with args in_features and out_featrures, and corresponding activation function 
+        layers.append([torch.nn.Linear(sizes[i], sizes[i+1]), activation_funct()])
+    # build and return multilayer perceptron NN
     return torch.nn.Sequential(*layers)
 
 def support_to_scalar(logits, support_size):
