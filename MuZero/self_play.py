@@ -20,13 +20,91 @@ class SelfPlay:
         numpy.random.seed(seed)
         torch.manual_seed(seed)
 
-        # Initialize the network
+        # Initialize the network load most recent network weights. Load model onto GPU and set mode to eval
         self.model = models.MuZeroNetwork(self.config)
         self.model.set_weights(initial_checkpoint["weights"])
         self.model.to(torch.device("cuda" if self.config.selfplay_on_gpu else "cpu"))
         self.model.eval()
 
+    # TODO clean this up
     def continuous_self_play(self, shared_storage, replay_buffer, test_mode=False):
+        while 
+            shared_storage.get_info.remote("training_step") < self.config.training_steps and not ray.get(
+            shared_storage.get_info.remote("terminate")
+        ):
+            self.model.set_weights(ray.get(shared_storage.get_info.remote("weights")))
+
+            #visit_softmax_temperature_fn will produce a float that depends on number of training steps.
+            # overtime the value is decreased to reduce the likelihood of exploration.
+            if not test_mode:
+                game_history = self.play_game(
+                    self.config.visit_softmax_temperature_fn(
+                        trained_steps=ray.get(
+                            shared_storage.get_info.remote("training_step")
+                        )
+                    ),
+                    self.config.temperature_threshold,
+                    False,
+                    "self",
+                    0,
+                )
+
+                replay_buffer.save_game.remote(game_history, shared_storage)
+
+            else:
+                # Take the best action (no exploration) in test mode
+                game_history = self.play_game(
+                    0,
+                    self.config.temperature_threshold,
+                    False,
+                    "self" if len(self.config.players) == 1 else self.config.opponent,
+                    self.config.muzero_player,
+                )
+
+                # Save to the shared storage
+                shared_storage.set_info.remote(
+                    {
+                        "episode_length": len(game_history.action_history) - 1,
+                        "total_reward": sum(game_history.reward_history),
+                        "mean_value": numpy.mean(
+                            [value for value in game_history.root_values if value]
+                        ),
+                    }
+                )
+                if 1 < len(self.config.players):
+                    shared_storage.set_info.remote(
+                        {
+                            "muzero_reward": sum(
+                                reward
+                                for i, reward in enumerate(game_history.reward_history)
+                                if game_history.to_play_history[i - 1]
+                                == self.config.muzero_player
+                            ),
+                            "opponent_reward": sum(
+                                reward
+                                for i, reward in enumerate(game_history.reward_history)
+                                if game_history.to_play_history[i - 1]
+                                != self.config.muzero_player
+                            ),
+                        }
+                    )
+
+            # Managing the self-play / training ratio
+            if not test_mode and self.config.self_play_delay:
+                time.sleep(self.config.self_play_delay)
+            if not test_mode and self.config.ratio:
+                while (
+                    ray.get(shared_storage.get_info.remote("training_step"))
+                    / max(
+                        1, ray.get(shared_storage.get_info.remote("num_played_steps"))
+                    )
+                    < self.config.ratio
+                    and ray.get(shared_storage.get_info.remote("training_step"))
+                    < self.config.training_steps
+                    and not ray.get(shared_storage.get_info.remote("terminate"))
+                ):
+                    time.sleep(0.5)
+
         self.close_game()
 
     def play_game(self, temperature, temperature_threshold, render, opponent, muzero_player):
@@ -300,6 +378,7 @@ class Node:
             self.children[a].prior = self.children[a].prior * (1 - frac) + n * frac
 
 
+#TODO fill this out
 class GameHistory:
     """
     Store only usefull information of a self-play game.
@@ -326,7 +405,27 @@ class GameHistory:
         Generate a new observation with the observation at the index position
         and num_stacked_observations past observations and actions stacked.
         """
+        # Convert to positive index
+        index = index % len(self.observation_history)
+
         stacked_observations = self.observation_history[index].copy()
+
+        for past_observation_index in reversed(range(index - num_stacked_observations, index)):
+            if (0 <= past_observation_index):
+                previous_observation = numpy.concatenate(
+                    (
+                        self.observation_history[past_observation_index],
+                        [numpy.ones_like(stacked_observations[0])* self.action_history[past_observation_index + 1]]
+                    )
+                )
+            else:
+                previous_observation = numpy.concatenate(
+                    (
+                        numpy.zeros_like(self.observation_history[index]),
+                        [numpy.zeros_like(stacked_observations[0])],
+                    )
+                )
+            stacked_observations = numpy.concatenate((stacked_observations, previous_observation))
 
         return stacked_observations
 

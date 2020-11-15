@@ -63,21 +63,25 @@ class Trainer:
         """
         Perform one training step.
         """
+        (observation_batch, action_batch, target_value, target_reward, target_policy,
+        weight_batch, gradient_scale_batch) = batch
+
         pass
 
     def update_lr(self):
         """
         Update learning rate
         """
-        pass
+        lr = self.config.lr_init * self.config.lr_decay_rate ** (self.training_step / self.config.lr_decay_steps)
+        
+        for param_group in self.optimizer.param_groups:
+            param_group["lr"] = lr
+       
 
     @staticmethod
-    def loss_function(
-        value,
-        reward,
-        policy_logits,
-        target_value,
-        target_reward,
-        target_policy,
-    ):
-        pass
+    def loss_function( value, reward, policy_logits, target_value, target_reward, target_policy):
+        # Cross-entropy seems to have a better convergence than MSE
+        value_loss = (-target_value * torch.nn.LogSoftmax(dim=1)(value)).sum(1)
+        reward_loss = (-target_reward * torch.nn.LogSoftmax(dim=1)(reward)).sum(1)
+        policy_loss = (-target_policy * torch.nn.LogSoftmax(dim=1)(policy_logits)).sum(1)
+        return value_loss, reward_loss, policy_loss
