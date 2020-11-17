@@ -34,11 +34,11 @@ class TrafficEnv():
         # Make all lights green for vertical lanes ('1'), it does not matter
         self.lights = [1 for _ in range(len(self.horiz_lanes) * len(self.vert_lanes))]
         
-        # self.make_spawn_blocks(self.start_indices, [0.5 for _ in range(len(self.start_indices))])
-        # if self.has_inf_speed:
-            # self.reset(self.waitline_sizes)
-        # else:
-            # self.reset([True for _ in range(len(self.valid_car_indices))])
+        self.make_spawn_blocks(self.start_indices, [0.5 for _ in range(len(self.start_indices))])
+        if self.has_inf_speed:
+            self.reset(self.waitline_sizes)
+        else:
+            self.reset([True for _ in range(len(self.valid_car_indices))])
         
     
     def verify_inputs(self):
@@ -148,13 +148,17 @@ class TrafficEnv():
         block_next = self.layout[ind]
         if block_next < 0:
             # Car is entering an intersection
-            if self.light_dict[ind_step] == self.lights[-block_next-1]:
-                # Green light, get next block after intersection
-                while self.layout[ind_next] == block_next:
-                    ind_next += ind_step
-            else:
-                # Red light, car cannot move
-                return False, ind
+            try:
+                if self.light_dict[ind_step] == self.lights[-block_next-1]:
+                    # Green light, get next block after intersection
+                    while self.layout[ind_next] == block_next:
+                        ind_next += ind_step
+                else:
+                    # Red light, car cannot move
+                    return False, ind
+            except:
+                print(self.light_dict)
+                print(self.lights)
         if self.layout[ind_next] == 0:
             # Car reached a goal block
             self.car_indices[ind] = False
