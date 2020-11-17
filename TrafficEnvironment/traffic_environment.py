@@ -22,8 +22,6 @@ class TrafficEnv():
         if self.has_inf_speed:
             self.get_waitlines()
         
-        self.initial_cars = None
-        self.current_step = 0
         self.action_space = spaces.MultiDiscrete(
             [2 for _ in range(len(self.horiz_lanes) * len(self.vert_lanes))])
         if self.has_inf_speed:
@@ -473,6 +471,8 @@ class TrafficEnv():
         self.horiz_cum_wait = np.array([0 for _ in range(len(self.horiz_lanes))])
         self.vert_cum_wait = np.array([0 for _ in range(len(self.vert_lanes))])
         self.last_action_dist = 0
+        # Reset step counters
+        self.current_step = 0
         # Reseed random generator
         self.np_random, seed = seeding.np_random(seed)
         #return self.observation(), seed
