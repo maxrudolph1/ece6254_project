@@ -26,8 +26,8 @@ if is_ipython:
 
 plt.ion()
 
-env = te.TrafficEnv(horiz_lanes=('e','w'), vert_lanes=('n','s'), horiz_sizes=(10,10, 10), vert_sizes=(10,10,10), 
-                    car_speed=2, max_wait=100, max_wait_penalty=1, max_steps=200)
+env = te.TrafficEnv(horiz_lanes=('e','w', 'e'), vert_lanes=('n','s', 's'), horiz_sizes=(10,10, 10,10), vert_sizes=(10,10,10,10), 
+                    car_speed=2, max_wait=100, max_wait_penalty=1000, max_steps=200)
 
 
 # if gpu is to be used
@@ -107,7 +107,7 @@ def select_action(state):
             num_lights = env.action_space.shape[0]
             val = policy_net(state).argmax(dim=1)
             action = torch.tensor([int(x) for x in bin(val)[2:]]).float()
-            action = torch.cat((torch.zeros((6)), action), dim=0)
+            action = torch.cat((torch.zeros((num_lights)), action), dim=0)
             action = action[-num_lights:]
             
             return action
@@ -124,7 +124,7 @@ def plot_durations():
     plt.clf()
     durations_t = torch.tensor(episode_durations, dtype=torch.float)
     plt.title('Training...')
-    plt.xlabel('Bitch Fits')
+    plt.xlabel('Episodes')
     plt.ylabel('Reward')
     
     plt.plot(durations_t.numpy())
@@ -211,7 +211,7 @@ for i_episode in range(num_episodes):
         # if t % 4 == 0:
         #     #print('here')
         #     expert_policy = 1 - expert_policy
-        action = expert_policy
+ 
         
         next_state, reward, done, _ = env.step(action)
         reward = torch.tensor([reward], device=device)

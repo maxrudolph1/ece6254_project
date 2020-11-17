@@ -9,6 +9,8 @@ class DQN(nn.Module):
         self.fc1 = nn.Linear(N_STATES, N_STATES*4)
         #self.fc1.weight.data.normal_(0, 0.1)   # initialization
         self.fc2 = nn.Linear(N_STATES*4, N_STATES*4)
+        self.fc3 = nn.Linear(N_STATES*4, N_STATES*4)
+ 
         self.out = nn.Linear(N_STATES*4, N_ACTIONS)
 
         self.final = nn.Sigmoid()
@@ -18,6 +20,8 @@ class DQN(nn.Module):
         x = F.relu(self.fc1(x))
 
         x = F.relu(self.fc2(x))
+        x = F.relu(self.fc3(x))
+
    
 
 
