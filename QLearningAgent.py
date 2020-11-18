@@ -26,7 +26,7 @@ class QLearningAgent:
         "You can initialize Q-values here..."
         self.q_values = util.Counter()  # indexed by (state, action) tuples
         self.state_space = state_space
-        self.action_space = action_space #range(0, action_space.n)
+        self.action_space = range(0, 2**len(action_space.nvec)) #action_space.n)
         self.epsilon = epsilon
         self.alpha = alpha
         self.discount = discount
@@ -39,10 +39,10 @@ class QLearningAgent:
         """
         return self.q_values[(state, action)]
     
-    def updateSS(self, newstate):
-        self.state_space = np.append(self.state_space,newstate)
-        for a in self.action_space:
-            self.q_values[(newstate, a)] = 0.0
+    # def updateSS(self, newstate):
+    #     self.state_space = np.append(self.state_space,newstate)
+    #     for a in self.action_space:
+    #         self.q_values[(newstate, a)] = 0.0
 
     def computeValueFromQValues(self, state):
         """
@@ -104,8 +104,8 @@ class QLearningAgent:
         """
         # Pick Action
         legal_actions = self.action_space
-        if state not in self.state_space:
-            self.updateSS(state)
+        # if state not in self.state_space:
+        #     self.updateSS(state)
         
         if legal_actions is None:
             return None
