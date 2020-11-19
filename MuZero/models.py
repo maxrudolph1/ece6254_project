@@ -1,3 +1,5 @@
+# Code borrows heavily from werner-duvaud/muzero-general
+
 import math
 from abc import ABC, abstractmethod
 
