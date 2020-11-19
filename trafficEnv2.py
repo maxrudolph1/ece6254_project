@@ -5,7 +5,7 @@ import numpy as np
 
 class TrafficEnv():
     def __init__(self, horiz_lanes=('e','w'), vert_lanes=('n','s','sn'), horiz_sizes=(3,3,4,2), vert_sizes=(3,3,3), 
-                    car_speed=2, max_wait=100, max_wait_penalty=1000000, max_steps=100):
+                    car_speed=2, max_wait=1000, max_wait_penalty=1000000, max_steps=100):
         self.horiz_lanes = horiz_lanes
         self.vert_lanes = vert_lanes
         self.horiz_sizes = horiz_sizes
@@ -18,7 +18,7 @@ class TrafficEnv():
         self.verify_inputs()
         self.get_layout()
         
-        self.has_inf_speed = self.car_speed == 0
+        self.has_inf_speed = (self.car_speed == 0)
         if self.has_inf_speed:
             self.get_waitlines()
         
@@ -31,16 +31,16 @@ class TrafficEnv():
                 [x + 1 for x in self.waitline_sizes])
         else:
             self.observation_space = spaces.MultiDiscrete(
-                [2 for _ in range(len(self.valid_car_indices))]
+                [2 for _ in range(len(self.valid_car_indices[0]))]
                 + [max_wait + 1 for _ in range(len(self.horiz_lanes) + len(self.vert_lanes))])
         # Make all lights green for vertical lanes ('1'), it does not matter
         self.lights = [1 for _ in range(len(self.horiz_lanes) * len(self.vert_lanes))]
         
-        # self.make_spawn_blocks(self.start_indices, [0.5 for _ in range(len(self.start_indices))])
-        # if self.has_inf_speed:
-            # self.reset(self.waitline_sizes)
-        # else:
-            # self.reset([True for _ in range(len(self.valid_car_indices))])
+        self.make_spawn_blocks(self.start_indices, [0.5 for _ in range(len(self.start_indices))])
+        if self.has_inf_speed:
+            self.reset(self.waitline_sizes)
+        else:
+            self.reset([True for _ in range(len(self.valid_car_indices[0]))])
         
     
     def verify_inputs(self):
@@ -119,8 +119,7 @@ class TrafficEnv():
     def reward(self):
         return self.last_action_dist if \
             self.max_cum_wait < self.max_wait else -self.max_wait_penalty
-
-    
+            
     def observation(self):
         if self.has_inf_speed:
             # Backtrack each waitline counting the number of cars waiting
@@ -148,8 +147,12 @@ class TrafficEnv():
         # Get next block
         ind_next = ind + ind_step
         block_next = self.layout[ind]
+        #print('index is' + str(ind))
+        #print('block next' + str(block_next))
         if block_next < 0:
             # Car is entering an intersection
+            #print('light1 : ' + str(self.light_dict[ind_step]))
+            #print('light2 : ' + str(self.lights[-block_next-1]))
             if self.light_dict[ind_step] == self.lights[-block_next-1]:
                 # Green light, get next block after intersection
                 while self.layout[ind_next] == block_next:
@@ -157,6 +160,7 @@ class TrafficEnv():
             else:
                 # Red light, car cannot move
                 return False, ind
+        #print('index next is ' + str(ind_next))
         if self.layout[ind_next] == 0:
             # Car reached a goal block
             self.car_indices[ind] = False
@@ -166,6 +170,7 @@ class TrafficEnv():
             return False, ind
         else:
             # Car can move to next block
+            #print('from ' + str(ind)+ ' to '+ str(ind_next))
             self.car_indices[ind] = False
             self.car_indices[ind_next] = True
             return True, ind_next
@@ -179,8 +184,8 @@ class TrafficEnv():
             ind_step = self.layout_steps[s]
             p = self.arrival_rate[i]
             kmax = 1 if self.has_inf_speed else self.car_speed
-            for k in range(kmax):
-                ind_k = s+k*ind_step
+            for ks in range(kmax):
+                ind_k = s+ks*ind_step
                 if self.car_indices[ind_k]:
                     break
                 else:
@@ -208,14 +213,17 @@ class TrafficEnv():
         while len_stack > 0:
             ind = car_stack.pop()
             len_stack -= 1
+            #print('ind:' + str(ind))
             k = 0
             while True:
                 can_move, ind_next = self.move_car(ind)
+                #print(ind_next)
                 if ind_next != ind:
                     k += 1
                 if not can_move or (k >= self.car_speed and not self.has_inf_speed):
                     break
                 ind = ind_next
+            #print(k)
             self.last_action_dist += k
             if not can_move and ind_next == ind:
                 # Car could not move at full speed and did not reach the goal,
@@ -468,7 +476,10 @@ class TrafficEnv():
                 for k in range(min((cars[i], self.waitline_sizes[i]))):
                     self.car_indices[ind-k*ind_step] = True
         else:
-            self.car_indices[self.valid_car_indices] = cars
+            if len(cars) > len(self.valid_car_indices[0]):
+                self.car_indices[self.valid_car_indices[0]] = cars[:-(len(self.horiz_lanes) + len(self.vert_lanes))]
+            else:
+                self.car_indices[self.valid_car_indices[0]] = cars
         # Reset waiting counters
         self.horiz_cum_wait = np.array([0 for _ in range(len(self.horiz_lanes))])
         self.vert_cum_wait = np.array([0 for _ in range(len(self.vert_lanes))])
