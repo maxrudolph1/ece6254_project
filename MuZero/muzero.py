@@ -4,13 +4,19 @@ import os
 import pickle
 import sys
 import time
+import threading
 
 import numpy
 import torch
 
+sys.path.insert(0, '..')
+from TrafficEnvironment import traffic_environment
+import muzero_config
+
 class Muzero:
     def __init__(self, game_name, config=None, split_resources_in=1):
         # Load the game and the config from the module with the game name
+        '''
         try:
             game_module = importlib.import_module("games." + game_name)
             self.Game = game_module.Game
@@ -28,6 +34,9 @@ class Muzero:
                     setattr(self.config, param, value)
             else:
                 self.config = config
+        '''
+        self.Game = traffic_environment.TrafficEnv()
+        self.config = muzero_config.MuZeroConfig()
 
         # Fix random generator seed
         numpy.random.seed(self.config.seed)
@@ -63,16 +72,15 @@ class Muzero:
             "num_played_games": 0,
             "num_played_steps": 0,
             "num_reanalysed_games": 0,
-            "terminate": False,
+            "terminate": False
         }
         self.replay_buffer = {}
 
         model = models.MuZeroNetwork(config)
         weights = model.get_weights()
-        summary = str(model).replace("\n", " \n\n")
-   
-        self.checkpoint["weights"] = weights
-        self.summary = summary
+        self.summary = str(model).replace("\n", " \n\n") 
+        self.checkpoint["weights"] = copy.deepcopy(weights)
+
         
         # Workers
         self.self_play_workers = None
@@ -83,7 +91,22 @@ class Muzero:
         self.shared_storage_worker = None
 
     def train(self):
-        pass
+        # Manage GPUs
+        if 0 < self.num_gpus:
+            num_gpus_per_worker = self.num_gpus / (
+                self.config.train_on_gpu
+                + self.config.num_workers * self.config.selfplay_on_gpu
+                + log_in_tensorboard * self.config.selfplay_on_gpu
+                + self.config.use_last_model_value * self.config.reanalyse_on_gpu
+            )
+            if 1 < num_gpus_per_worker:
+                num_gpus_per_worker = math.floor(num_gpus_per_worker)
+        else:
+            num_gpus_per_worker = 0
+
+        # Initialize Worker Threads
+
+        #Launch Workers
 
     def terminate_workers(self):
         pass
@@ -99,8 +122,19 @@ class Muzero:
 
 if __name__ == "__main__":
 
-
-    muzero = muzero('tictactoe')
-    
+    muzero = muzero('traffic sim')
+    muzero.train()
     # Select Train, Load and Play
+
+    # Need either of the following if using DistributedDataParallel()  - DDP
+    # reference https://github.com/pytorch/examples/blob/master/imagenet/main.py
+
+    # Spawn a thread for multiprocessing will pickle model and save to desk
+    #torch.multiprocessing.spawn(function_name, args=(arg1,),nprocs=#,join=True)
+
+    # sync with nccl, mpi, 
+    #torch.distributed.init_process_group()
+
+    
+
     
