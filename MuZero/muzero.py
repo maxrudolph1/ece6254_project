@@ -11,6 +11,7 @@ import torch
 
 sys.path.insert(0, '..')
 from TrafficEnvironment import traffic_environment
+import muzero_config
 
 class Muzero:
     def __init__(self, game_name, config=None, split_resources_in=1):
@@ -35,7 +36,7 @@ class Muzero:
                 self.config = config
         '''
         self.Game = traffic_environment.TrafficEnv()
-        self.config = traffic_enviroment.MuZeroConfig()
+        self.config = muzero_config.MuZeroConfig()
 
         # Fix random generator seed
         numpy.random.seed(self.config.seed)
@@ -122,7 +123,7 @@ class Muzero:
 if __name__ == "__main__":
 
     muzero = muzero('traffic sim')
-    
+    muzero.train()
     # Select Train, Load and Play
 
     # Need either of the following if using DistributedDataParallel()  - DDP
