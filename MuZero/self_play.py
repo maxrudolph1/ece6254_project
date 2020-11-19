@@ -147,6 +147,8 @@ class SelfPlay:
                 game_history.reward_history.append(reward)
                 game_history.to_play_history.append(self.game.to_play())
 
+        # TODO remove print statement
+        print(game_history.reward_history[-1])
         return game_history
 
     def close_game(self):

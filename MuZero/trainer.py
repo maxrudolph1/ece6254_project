@@ -58,7 +58,7 @@ class Trainer:
             )
 
     # TODO 
-    def continuous_update_weights(self, replay_buffer, shared_storage):
+    def continuous_update_weights(self, shared_storage, replay_buffer):
         # Wait for the replay buffer to be filled
         while (shared_storage.get_info("num_played_games") < 1):
             time.sleep(0.1)

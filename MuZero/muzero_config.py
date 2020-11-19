@@ -8,7 +8,8 @@ class MuZeroConfig:
 
 
         ### Game
-        self.observation_shape = (3, 3, 3)  # Dimensions of the game observation, must be 3D (channel, height, width). For a 1D array, please reshape it to (1, 1, length of array)
+        # TODO update these values.
+        self.observation_shape = (1, 1, 3)  # Dimensions of the game observation, must be 3D (channel, height, width). For a 1D array, please reshape it to (1, 1, length of array)
         self.action_space = list(range(9))  # Fixed list of all possible actions. You should only edit the length
         self.players = list(range(1))  # List of players. You should only edit the length
         self.stacked_observations = 1  # Number of previous observations and previous actions to add to the current observation
