@@ -523,8 +523,19 @@ class TrafficEnv():
         else:
             val = self.reset([True for _ in range(len(self.valid_car_indices))])
         return val
+
+
     def to_play(self):
         return 1
 
+
     def legal_actions(self):
         return list(range(2**self.action_space.shape[0]))
+
+
+    def step_numerical_action(self, action):
+        num_lights = self.action_space.sample()
+        action = np.array([int(x) for x in bin(action)[2:]])
+        action = np.concatenate(np.zeros(num_lights),action)
+        action = action[-num_lights:]
+        return step(action)

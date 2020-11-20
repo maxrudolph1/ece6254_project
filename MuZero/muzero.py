@@ -44,8 +44,11 @@ class Muzero:
         '''
         self.Game = traffic_environment.TrafficEnv()
         self.config = muzero_config.MuZeroConfig()
-        self.config.observation_shape = (1, 1, len(self.Game.observation()))
-        self.config.action_space = list(range(2**self.Game.action_space.shape[0]))
+        #self.config.observation_shape = (1, 1, len(self.Game.observation()))
+        self.config.observation_shape = (1, 1, len(self.Game.observation_space.sample()))
+        self.config.action_space = list(range(0, 2 ** len(self.Game.action_space.sample()))
+        #self.config.action_space = list(range(2**self.Game.action_space.shape[0]))
+
 
         # Fix random generator seed
         numpy.random.seed(self.config.seed)

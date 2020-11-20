@@ -142,7 +142,11 @@ class SelfPlay:
                 else:
                     action, root = self.select_opponent_action(opponent, stacked_observations)
                 
-                observation, reward, done = self.game.step(action)
+                # TODO Made changes.
+                observation, reward, done = self.game.step_numerical_action(action)
+                #observation, reward, done = self.game.step(action)
+
+
                 observation = numpy.reshape(observation, (1,1, self.config.observation_shape[2]))
                 if (render):
                     print(f"Played action: {self.game.action_to_string(action)}")
