@@ -85,23 +85,19 @@ class MuZeroFullyConnectedNetwork(AbstractNetwork):
             )
         #torch.nn.parallel.DistributedDataParallel(#)
 
-        self.dynamics_hidden_state_network = 
-            mlp( encoding_size + action_space_size,
+        self.dynamics_hidden_state_network = mlp( encoding_size + action_space_size,
                 fc_dynamics_layers,
                 encoding_size   
             )
         #torch.nn.parallel.DistributedDataParallel( #)
 
-        self.dynamics_reward_network = 
-            mlp(encoding_size, fc_reward_layers, self.full_support_size)
+        self.dynamics_reward_network = mlp(encoding_size, fc_reward_layers, self.full_support_size)
         #torch.nn.parallel.DistributedDataParallel(#)
 
-        self.prediction_policy_network = 
-            mlp(encoding_size, fc_reward_layers, action_space_size)
+        self.prediction_policy_network = mlp(encoding_size, fc_reward_layers, action_space_size)
         #torch.nn.parallel.DistributedDataParallel(#)
 
-        self.prediction_value_network = 
-            mlp(encoding_size, fc_value_layers, self.full_support_size)
+        self.prediction_value_network = mlp(encoding_size, fc_value_layers, self.full_support_size)
         #torch.nn.parallel.DistributedDataParallel(#)
 
     # perform prediction inference hidden_state-> policy, value

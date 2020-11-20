@@ -159,7 +159,7 @@ class Muzero:
 
 if __name__ == "__main__":
     print(torch.cuda.is_available())
-    muzero = muzero('traffic sim')
+    muzero = Muzero('traffic sim')
     muzero.train()
 
     choice = input("Press a key to terminate operation: ")
