@@ -34,12 +34,9 @@ class TrafficEnv():
                 + [max_wait + 1 for _ in range(len(self.horiz_lanes) + len(self.vert_lanes))])
         # Make all lights green for vertical lanes ('1'), it does not matter
         self.lights = [1 for _ in range(len(self.horiz_lanes) * len(self.vert_lanes))]
+        self.lights_size = len(self.lights)
         
         # self.make_spawn_blocks(self.start_indices, [0.5 for _ in range(len(self.start_indices))])
-        # if self.has_inf_speed:
-            # self.reset(self.waitline_sizes)
-        # else:
-            # self.reset([True for _ in range(len(self.valid_car_indices))])
         
     
     def verify_inputs(self):
@@ -441,22 +438,28 @@ class TrafficEnv():
             self.arrival_rate = self.arrival_rate[ind_unique]
     
     
-    def reset(self, cars, seed=None):
-        # Verify input
-        if type(cars) != tuple and type(cars) != list and type(cars) != np.ndarray:
-            raise TypeError('Argument \'cars\' must be a tuple or list or numpy.ndarray')
-        elif len(cars) <= 0:
-            raise ValueError('Argument \'cars\' is empty')
-        # elif self.has_inf_speed:
-            # for k in range(len(cars)):
-                # if type(cars[k]) != int:
-                    # raise TypeError('Entry %d of argument \'cars\' is not an int' % k)
-                # elif cars[k] < 0:
-                    # raise ValueError('Entry %d of argument \'cars\' is negative' % k)
-        # else:
-            # for k in range(len(cars)):
-                # if type(cars[k]) != bool:
-                    # raise TypeError('Entry %d of argument \'cars\' is not a bool' % k)
+    def reset(self, cars=None, seed=None):
+        if cars is None:
+            if self.has_inf_speed:
+                cars = self.waitline_sizes
+            else:
+                cars = [True for _ in range(len(self.valid_car_indices))]
+        else:
+            # Verify input
+            if type(cars) != tuple and type(cars) != list and type(cars) != np.ndarray:
+                raise TypeError('Argument \'cars\' must be a tuple or list or numpy.ndarray')
+            elif len(cars) <= 0:
+                raise ValueError('Argument \'cars\' is empty')
+            # elif self.has_inf_speed:
+                # for k in range(len(cars)):
+                    # if type(cars[k]) != int:
+                        # raise TypeError('Entry %d of argument \'cars\' is not an int' % k)
+                    # elif cars[k] < 0:
+                        # raise ValueError('Entry %d of argument \'cars\' is negative' % k)
+            # else:
+                # for k in range(len(cars)):
+                    # if type(cars[k]) != bool:
+                        # raise TypeError('Entry %d of argument \'cars\' is not a bool' % k)
         # Reset cars
         self.car_indices = np.full(self.layout.shape, False)
         if self.has_inf_speed:
@@ -523,19 +526,17 @@ class TrafficEnv():
         else:
             val = self.reset([True for _ in range(len(self.valid_car_indices))])
         return val
-
-
+        
+        
     def to_play(self):
         return 1
 
 
     def legal_actions(self):
         return list(range(2**self.action_space.shape[0]))
-
-
+        
+        
     def step_numerical_action(self, action):
-        num_lights = len(self.action_space.sample())
-        action = np.array([int(x) for x in bin(action)[2:]])
-        action = np.concatenate((np.zeros(num_lights),action))
-        action = action[-num_lights:]
-        return step(self.action)
+        return self.step([int(x) for x in bin(action + 2**self.lights_size)[3:]])
+        
+        
