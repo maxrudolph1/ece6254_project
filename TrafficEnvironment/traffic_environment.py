@@ -26,7 +26,8 @@ class TrafficEnv():
             [2 for _ in range(len(self.horiz_lanes) * len(self.vert_lanes))])
         if self.has_inf_speed:
             self.observation_space = spaces.MultiDiscrete(
-                [x + 1 for x in self.waitline_sizes])
+                [x + 1 for x in self.waitline_sizes]
+                + [max_wait + 1 for _ in range(len(self.horiz_lanes) + len(self.vert_lanes))])
         else:
             self.observation_space = spaces.MultiDiscrete(
                 [2 for _ in range(self.valid_car_indices.size)]
