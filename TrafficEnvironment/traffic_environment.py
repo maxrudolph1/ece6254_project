@@ -514,3 +514,16 @@ class TrafficEnv():
     
     def render(self):
         self.render_cli()
+
+
+    def muzero_reset(self):
+        if self.has_inf_speed:
+            val = self.reset(self.waitline_sizes)
+        else:
+            val = self.reset([True for _ in range(len(self.valid_car_indices))])
+        return val
+    def to_play(self):
+        return 1
+
+    def legal_actions(self):
+        return list(range(2**self.action_space.shape[0]))
