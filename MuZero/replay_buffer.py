@@ -21,10 +21,11 @@ class ReplayBuffer:
 
         self.num_played_games = initial_checkpoint["num_played_games"]
         self.num_played_steps = initial_checkpoint["num_played_steps"]
-
+        self.total_samples = sum(
+            [len(game_history.root_values) for game_history in self.buffer.values()]
+        )
         # count number of samples in previous replay buffer
-        for game_history in self.buffer.values():
-            self.total_samples += len(game_history.root_values)
+   
 
         if self.total_samples != 0:
             print(f"Replay buffer initialized with {self.total_samples} samples ({self.num_played_games} games).\n")
@@ -121,7 +122,7 @@ class ReplayBuffer:
 
         if (self.config.PER and not force_uniform):
             game_history_priorities = []
-            for (game_history in self.buffer.values()):
+            for game_history in self.buffer.values():
                 game_history_priorities.append(game_history.game_priority)
 
             game_probs = numpy.array(game_history_priorities, dtype='float32')

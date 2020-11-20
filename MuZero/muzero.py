@@ -1,3 +1,4 @@
+import copy
 import importlib
 import math
 import os
@@ -13,7 +14,6 @@ sys.path.insert(0, '..')
 from TrafficEnvironment import traffic_environment
 
 import muzero_config
-import diagnose_model
 import models
 import replay_buffer
 import self_play
@@ -45,7 +45,7 @@ class Muzero:
         self.Game = traffic_environment.TrafficEnv()
         self.config = muzero_config.MuZeroConfig()
         self.config.observation_shape = (1, 1, len(self.Game.observation()))
-        self.action_space = 2**self.Same.action_space.shape[0]
+        self.config.action_space = list(range(2**self.Game.action_space.shape[0]))
 
         # Fix random generator seed
         numpy.random.seed(self.config.seed)
@@ -85,14 +85,14 @@ class Muzero:
         }
         self.replay_buffer = {}
 
-        model = models.MuZeroNetwork(config)
+        model = models.MuZeroNetwork(self.config)
         weights = model.get_weights()
         self.summary = str(model).replace("\n", " \n\n") 
         self.checkpoint["weights"] = copy.deepcopy(weights)
 
         
         # Workers
-        self.self_play_workers = None
+        self.self_play_workers = []
         self.test_worker = None
         self.training_worker = None
         self.reanalyse_worker = None
@@ -128,7 +128,7 @@ class Muzero:
         #Launch Workers
 
         for SP_worker in self.self_play_workers:
-            SP_worker_index.continuous_self_play(self.shared_storage_worker, self.replay_buffer_worker)
+            self.self_play_workers[SP_worker_index].continuous_self_play(self.shared_storage_worker, self.replay_buffer_worker)
         self.training_worker.continuous_update_weights(self.shared_storage_worker, self.replay_buffer_worker, self.shared_storage_worker)
 
     def terminate_workers(self):

@@ -12,6 +12,7 @@ class MuZeroNetwork:
                 config.observation_shape,
                 config.stacked_observations,
                 len(config.action_space),
+                #config.action_space,
                 config.encoding_size,
                 config.fc_reward_layers,
                 config.fc_value_layers,
@@ -77,32 +78,31 @@ class MuZeroFullyConnectedNetwork(AbstractNetwork):
 
         
         # TODO look into DataParallel() usage.
-        self.representation_network = #torch.nn.parallel.DistributedDataParallel(
-            mlp(observation_shape[0] * observation_shape[1] * observation_shape[2] * (stacked_observations + 1)
+        self.representation_network = mlp(observation_shape[0] * observation_shape[1] * observation_shape[2] * (stacked_observations + 1)
                 + stacked_observations * observation_shape[1] * observation_shape[2],
                 fc_representation_layers,
                 encoding_size
             )
-        #)
+        #torch.nn.parallel.DistributedDataParallel(#)
 
-        self.dynamics_hidden_state_network = #torch.nn.parallel.DistributedDataParallel(
-            mlp( endcoding_size + action_space_size,
+        self.dynamics_hidden_state_network = 
+            mlp( encoding_size + action_space_size,
                 fc_dynamics_layers,
                 encoding_size   
             )
-        #)
+        #torch.nn.parallel.DistributedDataParallel( #)
 
-        self.dynamics_reward_network = #torch.nn.parallel.DistributedDataParallel(
-            mlp(encoding_size, fc_reward_layers, full_support_size)
-        #)
+        self.dynamics_reward_network = 
+            mlp(encoding_size, fc_reward_layers, self.full_support_size)
+        #torch.nn.parallel.DistributedDataParallel(#)
 
-        self.prediction_policy_network = #torch.nn.parallel.DistributedDataParallel(
+        self.prediction_policy_network = 
             mlp(encoding_size, fc_reward_layers, action_space_size)
-        #)
+        #torch.nn.parallel.DistributedDataParallel(#)
 
-        self.prediction_value_network = #torch.nn.parallel.DistributedDataParallel(
-            mlp(encoding_size, fc_value_layers, full_support_size)
-        #)
+        self.prediction_value_network = 
+            mlp(encoding_size, fc_value_layers, self.full_support_size)
+        #torch.nn.parallel.DistributedDataParallel(#)
 
     # perform prediction inference hidden_state-> policy, value
     def prediction(self, hidden_state):
@@ -142,7 +142,7 @@ class MuZeroFullyConnectedNetwork(AbstractNetwork):
         action_one_hot.scatter_(1, action.long(), 1.0)
         model_input = torch.cat((hidden_state, action_one_hot), dim=1)
         next_hidden_state = self.dynamics_hidden_state_network(model_input)
-        reward = dynamics_reward_network(next_hidden_state)
+        reward = self.dynamics_reward_network(next_hidden_state)
 
         #normalize hidden_state
         min_next_hidden_state = next_hidden_state.min(1, keepdim=True)[0]
@@ -192,12 +192,13 @@ def mlp(
     # create layers for multilayer perceptron
     for i in range (len(sizes) - 1):
         # set activation functions for each layer
+        activation_funct = None
         if (i < len(sizes) - 2):
             activation_funct = activation
         else:
-            activation = output_activation
+            activation_funct = output_activation
         # add linear transform layer with args in_features and out_featrures, and corresponding activation function 
-        layers.append([torch.nn.Linear(sizes[i], sizes[i+1]), activation_funct()])
+        layers += [torch.nn.Linear(sizes[i], sizes[i+1]), activation_funct()]
     # build and return multilayer perceptron NN
     return torch.nn.Sequential(*layers)
 

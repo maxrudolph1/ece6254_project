@@ -1,5 +1,9 @@
+import os
+import datetime
+import torch
+
 class MuZeroConfig:
-     def __init__(self):
+    def __init__(self):
         # More information is available here: https://github.com/werner-duvaud/muzero-general/wiki/Hyperparameter-Optimization
 
         self.seed = 0  # Seed for numpy, torch and the game
@@ -39,7 +43,7 @@ class MuZeroConfig:
 
 
         ### Network
-        self.network = "fullconnected"  # "resnet" / "fullyconnected"
+        self.network = "fullyconnected"  # "resnet" / "fullyconnected"
         self.support_size = 10  # Value and reward are scaled (with almost sqrt) and encoded on a vector with a range of -support_size to support_size. Choose it so that support_size <= sqrt(max(abs(discounted reward)))
 
 

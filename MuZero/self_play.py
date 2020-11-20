@@ -8,6 +8,10 @@ import torch
 
 import models
 
+import sys
+sys.path.insert(0, '..')
+from TrafficEnvironment import traffic_environment
+
 class SelfPlay:
     """
     Class which run in a dedicated thread to play games and save them to the replay-buffer.
@@ -15,7 +19,8 @@ class SelfPlay:
 
     def __init__(self, initial_checkpoint, Game, config, seed):
         self.config = config
-        self.game = Game(seed)
+        self.game = traffic_environment.TrafficEnv()
+        #self.game = Game(seed)
 
         # Fix random generator seed
         numpy.random.seed(seed)
@@ -101,7 +106,8 @@ class SelfPlay:
         Play one game with actions based on the Monte Carlo tree search at each moves.
         """
         game_history = GameHistory()
-        observation = self.game.reset()
+        observation = self.game.muzero_reset()
+        observation = numpy.reshape(observation, (1,1, self.config.observation_shape[2]))
         game_history.action_history.append(0)
         game_history.observation_history.append(observation)
         game_history.reward_history.append(0)
@@ -117,7 +123,7 @@ class SelfPlay:
             while(not done and len(game_history.action_history) <= self.config.max_moves):
                 assert(len(numpy.array(observation).shape) == 3),  f"Observation should be 3 dimensionnal instead of {len(numpy.array(observation).shape)} dimensionnal. Got observation of shape: {numpy.array(observation).shape}"
 
-                assert(numpy.array(observation).shape == self.config.observation_shape) f"Observation should match the observation_shape defined in MuZeroConfig."
+                assert(numpy.array(observation).shape == self.config.observation_shape), f"Observation should match the observation_shape defined in MuZeroConfig."
 
                 stacked_observations = game_history.get_stacked_observations(-1, self.config.stacked_observations)
 
@@ -126,7 +132,7 @@ class SelfPlay:
                     root, mcts_info = MCTS(self.config).run(self.model, stacked_observations, self.game.legal_actions(), self.game.to_play(), True)
 
                     temp_to_use = 0
-                    if (not temperature_threshold or len(game_history.action_history) < temperature_threshold)
+                    if (not temperature_threshold or len(game_history.action_history) < temperature_threshold):
                         temp_to_use = temperature
                     action = self.select_action(root, temp_to_use)
 
@@ -137,7 +143,7 @@ class SelfPlay:
                     action, root = self.select_opponent_action(opponent, stacked_observations)
                 
                 observation, reward, done = self.game.step(action)
-
+                observation = numpy.reshape(observation, (1,1, self.config.observation_shape[2]))
                 if (render):
                     print(f"Played action: {self.game.action_to_string(action)}")
                     self.game.render()
@@ -148,7 +154,7 @@ class SelfPlay:
                 game_history.to_play_history.append(self.game.to_play())
 
         # TODO remove print statement
-        print(game_history.reward_history[-1])
+        #print(game_history.reward_history[-1])
         return game_history
 
     def close_game(self):
