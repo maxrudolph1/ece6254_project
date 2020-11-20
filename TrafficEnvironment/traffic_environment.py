@@ -36,7 +36,10 @@ class TrafficEnv():
         self.lights = [1 for _ in range(len(self.horiz_lanes) * len(self.vert_lanes))]
         self.lights_size = len(self.lights)
         
-        # self.make_spawn_blocks(self.start_indices, [0.5 for _ in range(len(self.start_indices))])
+        # Default spawn blocks, you are encouraged to set your own values after initialization
+        self.make_spawn_blocks(self.start_indices, [0.5 for _ in range(len(self.start_indices))])
+        # Default reset, you are encouraged to reset to your own state after initialization
+        self.reset()
         
     
     def verify_inputs(self):
@@ -170,20 +173,29 @@ class TrafficEnv():
     def enter_car(self):
         # Generate new cars
         new_car_indices = []
+        new_car_dist = 0
         for i in range(len(self.spawn_indices)):
             s = self.spawn_indices[i]
             ind_step = self.layout_steps[s]
             p = self.arrival_rate[i]
-            kmax = 1 if self.has_inf_speed else self.car_speed
-            for k in range(kmax):
+            kmax = self.car_speed
+            k = 0
+            while k < kmax or self.has_inf_speed:
                 ind_k = s+k*ind_step
                 if self.car_indices[ind_k]:
+                    # Block already has a car
+                    break
+                elif self.layout_steps[ind_k] == 0:
+                    # Block is in intersection/outside the lane
                     break
                 else:
                     self.car_indices[ind_k] = self.np_random.binomial(1,p) == 1
                     if self.car_indices[ind_k]:
                         new_car_indices.append(ind_k)
-        return new_car_indices
+                        # Total distance traversed by new cars entering the layout
+                        new_car_dist += (k + 1)
+                k += 1
+        return new_car_indices, new_car_dist
     
     
     def step(self, action):
@@ -232,19 +244,28 @@ class TrafficEnv():
         # Compute maximum cumulative waiting
         self.max_cum_wait = max((max(self.horiz_cum_wait), max(self.vert_cum_wait)))
         # Let new cars join
-        new_car_stack = self.enter_car()
+        new_car_stack, new_car_dist = self.enter_car()
+        # Add distance traversed by new cars entering the layout
+        self.last_action_dist += new_car_dist
         if self.has_inf_speed:
-            # Move new cars until stack is empty (just if speed is infinite)
-            # Reward and cumulative waitings are not affected this time
+            # Move new cars until they reach an intersection (just if speed is infinite)
+            # Cumulative waitings are not affected this time
             len_stack = len(new_car_stack)
             while len_stack > 0:
                 ind = new_car_stack.pop()
                 len_stack -= 1
+                k = 0
                 while True:
+                    if self.layout[ind] < 0:
+                        # Car is entering an intersection
+                        break
                     can_move, ind_next = self.move_car(ind)
+                    if ind_next != ind:
+                        k += 1
                     if not can_move:
                         break
                     ind = ind_next
+                self.last_action_dist += k
         # Advance one step
         self.current_step += 1
         # Compute output variables
@@ -414,7 +435,6 @@ class TrafficEnv():
                     raise TypeError('Entry %d of argument \'spawn_indices\' is not an int' % k)
                 elif spawn_indices[k] < 0:
                     raise ValueError('Entry %d of argument \'spawn_indices\' is negative' % k)
-        self.spawn_indices = np.array(spawn_indices)
         # Verify input 'arrival_rate'
         if type(arrival_rate) != tuple and type(arrival_rate) != list \
             and type(arrival_rate) != np.ndarray:
@@ -427,6 +447,7 @@ class TrafficEnv():
                 if arrival_rate[k] < 0.0 or arrival_rate[k] > 1.0:
                     raise ValueError(
                         'Entry %d of argument \'arrival_rate\' is not in the range [0,1]' % k)
+        self.spawn_indices = np.array(spawn_indices)
         self.arrival_rate = np.array(arrival_rate)
         if len(self.spawn_indices) != 0:
             # Remove indices of invalid blocks
