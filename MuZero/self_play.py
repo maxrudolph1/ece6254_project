@@ -106,7 +106,7 @@ class SelfPlay:
         Play one game with actions based on the Monte Carlo tree search at each moves.
         """
         game_history = GameHistory()
-        #observation = self.game.muzero_reset()
+        observation = self.game.muzero_reset()
         observation = numpy.reshape(observation, (1,1, self.config.observation_shape[2]))
         game_history.action_history.append(0)
         game_history.observation_history.append(observation)
@@ -158,7 +158,7 @@ class SelfPlay:
                 game_history.to_play_history.append(self.game.to_play())
 
         # TODO remove print statement
-        print(sum(game_history.reward_history))
+        print(f"{sum(game_history.reward_history[-100:])},")
         return game_history
 
     def close_game(self):

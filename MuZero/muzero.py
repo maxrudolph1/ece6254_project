@@ -49,7 +49,7 @@ class Muzero:
         #env_numLanes = (len(self.Game.horiz_lanes) + len(self.Game.vert_lanes))
         # Network 2
         # self.Game = traffic_environment.TrafficEnv(car_speed=speed, max_wait=800, horiz_lanes=('e','w'), vert_lanes=('s','sn'), horiz_sizes=(3,3,2), vert_sizes=(3,2,2))
-        # self.Game.make_spawn_blocks(self.Game.start_indices, [0.5 for _ in range(len(self.Game.start_indices))])
+        # self.Game.make_spawn_blocks(self.Game.start_indices, [0.9, 0.1, 0.9, 0.9, 0.1])#, [0.5 for _ in range(len(self.Game.start_indices))])
         # env_numLanes = (len(self.Game.horiz_lanes) + len(self.Game.vert_lanes))
 
         self.config = muzero_config.MuZeroConfig()
@@ -170,11 +170,12 @@ class Muzero:
         pass
 
 if __name__ == "__main__":
-    print(torch.cuda.is_available())
+    #print(torch.cuda.is_available())
     muzero = Muzero('traffic sim')
     muzero.train()
 
-    choice = input("Press a key to terminate operation: ")
+    choice = input("")
+    #choice = input("Press a key to terminate operation: ")
     muzero.terminate_workers()
 
     if self.config.save_model:
