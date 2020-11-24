@@ -45,12 +45,12 @@ class Muzero:
         # Network 1
         speed = 2 # need to test speeds 0 1 2
         self.Game = traffic_environment.TrafficEnv(car_speed=speed, max_wait=1400, horiz_lanes=('e',), vert_lanes=('n',), horiz_sizes=(7,7), vert_sizes=(3,3))
-        self.Game.make_spawn_blocks(env.start_indices,[0.9, 0.1]) # [0.5 for _ in range(len(env.start_indices))])
-        #env_numLanes = (len(env.horiz_lanes) + len(env.vert_lanes))
+        self.Game.make_spawn_blocks(self.Game.start_indices,[0.9, 0.1]) # [0.5 for _ in range(len(self.Game.start_indices))])
+        #env_numLanes = (len(self.Game.horiz_lanes) + len(self.Game.vert_lanes))
         # Network 2
         # self.Game = traffic_environment.TrafficEnv(car_speed=speed, max_wait=800, horiz_lanes=('e','w'), vert_lanes=('s','sn'), horiz_sizes=(3,3,2), vert_sizes=(3,2,2))
-        # self.Game.make_spawn_blocks(env.start_indices, [0.5 for _ in range(len(env.start_indices))])
-        # env_numLanes = (len(env.horiz_lanes) + len(env.vert_lanes))
+        # self.Game.make_spawn_blocks(self.Game.start_indices, [0.5 for _ in range(len(self.Game.start_indices))])
+        # env_numLanes = (len(self.Game.horiz_lanes) + len(self.Game.vert_lanes))
 
         self.config = muzero_config.MuZeroConfig()
         #self.config.observation_shape = (1, 1, len(self.Game.observation()))
