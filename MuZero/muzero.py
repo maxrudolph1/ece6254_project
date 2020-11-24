@@ -129,10 +129,10 @@ class Muzero:
         self.shared_storage_worker = shared_storage.SharedStorage(self.checkpoint, self.config)
         self.shared_storage_worker.set_info("terminate", False)
         #Launch Workers
-
-        for SP_worker in self.self_play_workers:
-            self.self_play_workers[SP_worker_index].continuous_self_play(self.shared_storage_worker, self.replay_buffer_worker)
-        self.training_worker.continuous_update_weights(self.shared_storage_worker, self.replay_buffer_worker, self.shared_storage_worker)
+        play_thread = threading.Thread(target=self.self_play_workers[0].continuous_self_play, args=(self.shared_storage_worker, self.replay_buffer_worker))
+        train_thread = threading.Thread(target=self.training_worker.continuous_update_weights, args=(self.shared_storage_worker, self.replay_buffer_worker))
+        play_thread.start()
+        train_thread.start()
 
     def terminate_workers(self):
         if self.shared_storage_worker:

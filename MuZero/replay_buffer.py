@@ -201,7 +201,7 @@ class ReplayBuffer:
         actions = []
         
         for index in range(state_index, state_index + self.config.num_unroll_steps + 1):
-            value = compute_target_value(game_history, index)
+            value = self.compute_target_value(game_history, index)
 
             # check if index <, =, > the length of game steps
             if (index < len(game_history.root_values)):

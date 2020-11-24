@@ -558,6 +558,7 @@ class TrafficEnv():
         
         
     def step_numerical_action(self, action):
-        return self.step([int(x) for x in bin(action + 2**self.lights_size)[3:]])
+        observation, reward, done, temp = self.step([int(x) for x in bin(action + 2**self.lights_size)[3:]])
+        return observation, reward, done
         
         
